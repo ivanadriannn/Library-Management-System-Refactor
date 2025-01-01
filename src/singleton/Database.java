@@ -2,13 +2,16 @@ package singleton;
 
 import model.Book;
 import model.Loan;
+import model.Novel;
+import model.ReferenceBook;
+import model.TextBook;
 import model.User;
 import observer.BookLogger;
 import observer.BookSubject;
 import observer.RoleNotifier;
 import state.AvailableState;
-
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class Database {
@@ -72,16 +75,20 @@ public class Database {
     }
 
     public void printBooks() {
-        System.out.println("Available Books:");
-        for (Book book : books) {
-            book.displayInfo();
+    	System.out.println("Available Books:");
+        Iterator<Book> iterator = books.iterator();
+        while (iterator.hasNext()) {
+            Book book = iterator.next();
+            book.displayInfo(); 
         }
     }
 
     public void printUsers() {
         System.out.println("Registered Users:");
-        for (User user : users) {
-            user.displayInfo();
+        Iterator<User> iterator = users.iterator();
+        while (iterator.hasNext()) {
+        	User user = iterator.next();
+            user.displayInfo(); 
         }
     }
 
@@ -113,10 +120,34 @@ public class Database {
                 return;
             }
 
-            double loanFee = book.calculateLoan(loanDays);
+            if (book instanceof ReferenceBook) {
+                System.out.println("The book '" + book.getTitle() + "' is a reference book and cannot be loaned.");
+                return;
+            }
+
+            double loanFee = 0.0;
+
+            if (book instanceof Novel) {
+                Novel novel = (Novel) book; // Casting ke Novel
+                loanFee = novel.calculateLoan(loanDays); 
+            } else if (book instanceof TextBook) {
+                TextBook textbook = (TextBook) book; // Casting ke TextBook
+                loanFee = textbook.calculateLoan(loanDays); 
+            } else if (book instanceof ReferenceBook) {
+                ReferenceBook referenceBook = (ReferenceBook) book; // Casting ke ReferenceBook
+                loanFee = referenceBook.calculateLoan(loanDays);
+                if (loanFee == 0.0) {
+                    System.out.println("This reference book cannot be loaned.");
+                    return;
+                }
+            } else {
+                System.out.println("Unknown book type.");
+                return;
+            }
+
             Loan loan = new Loan(user, book, loanDays);
             loans.add(loan);
-            book.changeState(); 
+            book.changeState();
 
             System.out.println("Book '" + book.getTitle() + "' has been loaned to " + user.getName());
             System.out.println("Total loan fee: $" + loanFee);
@@ -124,6 +155,7 @@ public class Database {
             System.out.println("Invalid User ID or Book ID.");
         }
     }
+
 
     public void returnBook(int userId, int bookId, int daysLate) {
         Loan loanToReturn = null;
